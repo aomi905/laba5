@@ -4,16 +4,11 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.io.*;
 import java.text.DecimalFormat;
-import java.util.Iterator;
 import java.util.ArrayList;
-import javax.swing.AbstractAction;
-import javax.swing.Action;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
+import java.util.Iterator;
+import javax.swing.*;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 public class MainFrame extends JFrame {
     private static final int WIDTH = 700;
@@ -24,31 +19,85 @@ public class MainFrame extends JFrame {
     private boolean fileLoaded = false;
     private JMenuItem saveToTextMenuItem;
     private DecimalFormat formatter = new DecimalFormat("###.#####");
+    private JCheckBoxMenuItem showAxisMenuItem,
+            showMarkersMenuItem,
+            showGridsMenuItem,
+            showRotateMenuItem;
 
     public MainFrame() {
-        super("Обработка событий от мыши");
-        this.setSize(700, 500);
+        super("Plotting function graphs based on prepared files");
+
+        this.setSize(WIDTH, HEIGHT);
         Toolkit kit = Toolkit.getDefaultToolkit();
-        this.setLocation((kit.getScreenSize().width - 700) / 2, (kit.getScreenSize().height - 500) / 2);
-        this.setExtendedState(6);
+        this.setLocation((kit.getScreenSize().width - WIDTH) / 2,
+                (kit.getScreenSize().height - HEIGHT) / 2);
+
+        this.setExtendedState(JFrame.MAXIMIZED_BOTH);
+
         JMenuBar menuBar = new JMenuBar();
         this.setJMenuBar(menuBar);
-        JMenu fileMenu = new JMenu("Файл");
+
+        JMenu fileMenu = new JMenu("File");
         menuBar.add(fileMenu);
-        Action openGraphicsAction = new AbstractAction("Открыть файл с графиком") {
+        Action openGraphicsAction = new AbstractAction("Open file") {
             public void actionPerformed(ActionEvent event) {
                 if (MainFrame.this.fileChooser == null) {
                     MainFrame.this.fileChooser = new JFileChooser();
                     MainFrame.this.fileChooser.setCurrentDirectory(new File("."));
                 }
 
-                MainFrame.this.fileChooser.showOpenDialog(MainFrame.this);
-                MainFrame.this.openGraphics(MainFrame.this.fileChooser.getSelectedFile());
+                if (fileChooser.showOpenDialog(MainFrame.this) == JFileChooser.APPROVE_OPTION)
+                    MainFrame.this.openGraphics(MainFrame.this.fileChooser.getSelectedFile());
                 saveToTextMenuItem.setEnabled(true);
             }
         };
-
         fileMenu.add(openGraphicsAction);
+
+        JMenu graphicsMenu = new JMenu("Graph");
+        menuBar.add(graphicsMenu);
+        Action showAxisAction = new AbstractAction("Show coordinate axes") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                display.setShowAxis(showAxisMenuItem.isSelected());
+            }
+        };
+        showAxisMenuItem = new JCheckBoxMenuItem(showAxisAction);
+        graphicsMenu.add(showAxisMenuItem);
+        showAxisMenuItem.setSelected(true);
+
+        Action showMarkersAction = new AbstractAction("Show point markers") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                display.setShowMarkers(showMarkersMenuItem.isSelected());
+            }
+        };
+        showMarkersMenuItem = new JCheckBoxMenuItem(showMarkersAction);
+        graphicsMenu.add(showMarkersMenuItem);
+        showMarkersMenuItem.setSelected(true);
+
+        Action showGridsAction = new AbstractAction("Show grid") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                display.setShowGrid(showGridsMenuItem.isSelected());
+            }
+        };
+        showGridsMenuItem = new JCheckBoxMenuItem(showGridsAction);
+        graphicsMenu.add(showGridsMenuItem);
+        showGridsMenuItem.setSelected(true);
+
+        Action showRotateAction = new AbstractAction("Rotate 90 degree to the left") {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                display.setShowRotate(showRotateMenuItem.isSelected());
+            }
+        };
+        showRotateMenuItem = new JCheckBoxMenuItem(showRotateAction);
+        graphicsMenu.add(showRotateMenuItem);
+        showRotateMenuItem.setSelected(false);
+
+        graphicsMenu.addMenuListener(new GraphicsMenuListener());
+
+
         Action saveToTextAction = new AbstractAction("Сохранить в текстовый файл") {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -92,10 +141,16 @@ public class MainFrame extends JFrame {
                 this.display.displayGraphics(graphicsData);
             }
 
-        } catch (FileNotFoundException var6) {
-            JOptionPane.showMessageDialog(this, "Указанный файл не найден", "Ошибка загрузки данных", 2);
-        } catch (IOException var7) {
-            JOptionPane.showMessageDialog(this, "Ошибка чтения координат точек из файла", "Ошибка загрузки данных", 2);
+        } catch (FileNotFoundException e) {
+            JOptionPane.showMessageDialog(MainFrame.this,
+                    "The specified file wasn't found", "Data loading error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        } catch (IOException e) {
+            JOptionPane.showMessageDialog(MainFrame.this,
+                    "Error in reading point coordinates from file", "Data loading error",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
         }
     }
 
@@ -127,5 +182,25 @@ public class MainFrame extends JFrame {
         MainFrame frame = new MainFrame();
         frame.setDefaultCloseOperation(3);
         frame.setVisible(true);
+    }
+
+    private class GraphicsMenuListener implements MenuListener {
+        @Override
+        public void menuSelected(MenuEvent e) {
+            showAxisMenuItem.setEnabled(fileLoaded);
+            showMarkersMenuItem.setEnabled(fileLoaded);
+            showGridsMenuItem.setEnabled(fileLoaded);
+            showRotateMenuItem.setEnabled(fileLoaded);
+        }
+
+        @Override
+        public void menuDeselected(MenuEvent e) {
+
+        }
+
+        @Override
+        public void menuCanceled(MenuEvent e) {
+
+        }
     }
 }
